@@ -175,7 +175,7 @@ func (hsdb *HSDatabase) GetUserByEmail(email string) (*types.User, error) {
 	})
 }
 
-func GetUserByOIDCEmail(tx *gorm.DB, email string) (*types.User, error) {
+func GetUserByEmail(tx *gorm.DB, email string) (*types.User, error) {
 	user := types.User{}
 	if result := tx.First(&user, "email = ?", id); errors.Is(
 		result.Error,
