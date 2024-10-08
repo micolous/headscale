@@ -441,7 +441,7 @@ func (a *AuthProviderOIDC) createOrUpdateUserFromClaim(
 		return nil, fmt.Errorf("creating or updating user: %w", err)
 	}
 
-    if !claims.EmailVerified && !a.cfg.AllowUnverifiedEmail {
+	if !claims.EmailVerified && !a.cfg.AllowUnverifiedEmail {
 		return nil, fmt.Errorf("OIDC provider does not report email address is verified")
 	}
 
