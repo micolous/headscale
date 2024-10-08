@@ -169,6 +169,24 @@ func GetUserByOIDCIdentifier(tx *gorm.DB, id string) (*types.User, error) {
 	return &user, nil
 }
 
+func (hsdb *HSDatabase) GetUserByEmail(email string) (*types.User, error) {
+	return Read(hsdb.DB, func(rx *gorm.DB) (*types.User, error) {
+		return GetUserByEmail(rx, email)
+	})
+}
+
+func GetUserByOIDCEmail(tx *gorm.DB, email string) (*types.User, error) {
+	user := types.User{}
+	if result := tx.First(&user, "email = ?", id); errors.Is(
+		result.Error,
+		gorm.ErrRecordNotFound,
+	) {
+		return nil, ErrUserNotFound
+	}
+
+	return &user, nil
+}
+
 func (hsdb *HSDatabase) ListUsers() ([]types.User, error) {
 	return Read(hsdb.DB, func(rx *gorm.DB) ([]types.User, error) {
 		return ListUsers(rx)

@@ -124,3 +124,33 @@ func (s *Suite) TestSetMachineUser(c *check.C) {
 	c.Assert(node.UserID, check.Equals, newUser.ID)
 	c.Assert(node.User.Name, check.Equals, newUser.Name)
 }
+
+func (s *Suite) TestUserEmailAddress(c *check.C) {
+	user, err := db.CreateUser("test")
+	c.Assert(err, check.IsNil)
+	c.Assert(user.Name, check.Equals, "test")
+
+	users, err := db.ListUsers()
+	c.Assert(err, check.IsNil)
+	c.Assert(len(users), check.Equals, 1)
+
+	// Lookup should initially fail
+	_, err := db.GetUserByEmail("test@example.com")
+	c.Assert(err, check.NotNil)
+
+	// Set the email address
+	user.Email = "test@example.com"
+	err := db.Save(user).Error
+	c.Assert(err, check.IsNil)
+
+	// Now look up
+	u2, err := db.GetUserByEmail("test@example.com")
+	c.Assert(err, check.IsNil)
+	c.Assert(user.Name, u2.Name)
+
+	err = db.DestroyUser("test")
+	c.Assert(err, check.IsNil)
+
+	_, err = db.GetUserByName("test")
+	c.Assert(err, check.NotNil)
+}
