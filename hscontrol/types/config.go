@@ -165,6 +165,7 @@ type OIDCConfig struct {
 	Expiry                     time.Duration
 	UseExpiryFromToken         bool
 	MapLegacyUsers             bool
+	AllowUnverifiedEmail       bool
 }
 
 type DERPConfig struct {
@@ -276,6 +277,7 @@ func LoadConfig(path string, isFile bool) error {
 	viper.SetDefault("oidc.expiry", "180d")
 	viper.SetDefault("oidc.use_expiry_from_token", false)
 	viper.SetDefault("oidc.map_legacy_users", false)
+	viper.SetDefault("oidc.allow_unverified_email", false)
 
 	viper.SetDefault("logtail.enabled", false)
 	viper.SetDefault("randomize_client_port", false)
@@ -897,8 +899,9 @@ func LoadServerConfig() (*Config, error) {
 					return time.Duration(expiry)
 				}
 			}(),
-			UseExpiryFromToken: viper.GetBool("oidc.use_expiry_from_token"),
-			MapLegacyUsers:     viper.GetBool("oidc.map_legacy_users"),
+			UseExpiryFromToken:   viper.GetBool("oidc.use_expiry_from_token"),
+			MapLegacyUsers:       viper.GetBool("oidc.map_legacy_users"),
+			AllowUnverifiedEmail: viper.GetBool("oidc.allow_unverified_email"),
 		},
 
 		LogTail:             logTailConfig,

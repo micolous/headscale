@@ -441,12 +441,16 @@ func (a *AuthProviderOIDC) createOrUpdateUserFromClaim(
 		return nil, fmt.Errorf("creating or updating user: %w", err)
 	}
 
+    if !claims.EmailVerified && !a.cfg.AllowUnverifiedEmail {
+		return nil, fmt.Errorf("OIDC provider does not report email address is verified")
+	}
+
 	// This check is for legacy, if the user cannot be found by the OIDC identifier
 	// look it up by username. This should only be needed once.
 	// This branch will presist for a number of versions after the OIDC migration and
 	// then be removed following a deprecation.
 	if a.cfg.MapLegacyUsers && user == nil {
-		user, err = a.db.GetUserByName(claims.Username)
+		user, err = a.db.GetUserByEmail(claims.Email)
 		if err != nil && !errors.Is(err, db.ErrUserNotFound) {
 			return nil, fmt.Errorf("creating or updating user: %w", err)
 		}
@@ -456,13 +460,12 @@ func (a *AuthProviderOIDC) createOrUpdateUserFromClaim(
 			user = &types.User{}
 		}
 
-		// If the user exists, but it already has a provider identifier (OIDC sub), create a new user.
+		// If the user exists, but it already has a provider identifier (OIDC sub), reject it.
 		// This is to prevent users that have already been migrated to the new OIDC format
 		// to be updated with the new OIDC identifier inexplicitly which might be the cause of an
 		// account takeover.
 		if user.ProviderIdentifier != "" {
-			log.Info().Str("username", claims.Username).Str("sub", claims.Sub).Msg("user found by username, but has provider identifier, creating new user.")
-			user = &types.User{}
+			return nil, fmt.Errorf("user with that email already exists, but has a different provider identifier")
 		}
 	}
 
