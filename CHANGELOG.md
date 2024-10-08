@@ -4,16 +4,15 @@
 
 ### BREAKING
 
-- Remove `dns.use_username_in_magic_dns` configuration option [#2020](https://github.com/juanfont/headscale/pull/2020)
-  - Having usernames in magic DNS is no longer possible.
-- Redo OpenID Connect configuration [#2020](https://github.com/juanfont/headscale/pull/2020)
-  - `strip_email_domain` has been removed, domain is _always_ part of the username for OIDC.
-  - Users are now identified by `sub` claim in the ID token instead of username, allowing the username, name and email to be updated.
-    - By default, users are automatically migrated based on their username when logged in.
-      - This migration can be disabled, and should be on new installations or fully migrated installations [#2170](https://github.com/juanfont/headscale/pull/2170)
-  - User has been extended to store username, display name, profile picture url and email.
-    - These fields are forwarded to the client, and shows up nicely in the user switcher.
-    - These fields can be made available via the API/CLI for non-OIDC users in the future.
+- OIDC support has been entirely rebuilt in this version ([#2020](https://github.com/juanfont/headscale/pull/2020), [#2170](https://github.com/juanfont/headscale/pull/2170), ...) [due to security issues](./docs/oidc.md#migrating-from-headscale-0230-and-earlier).
+
+  [Existing OIDC users will need to take action to manually migrate accounts to the new schema](./docs/oidc.md#migrating-from-headscale-0230-and-earlier).
+
+  - Going forward, OIDC users are now identified by the OIDC `sub` attribute. Headscale will use this to handle account renames and email address changes.
+  - `dns.use_username_in_magic_dns` has been removed.
+  - `oidc.strip_email_domain` has been removed – OIDC usernames will be set by the `preferred_username` attribute. This might be a short username, but could also be an email address, UPN or phone number, depending on your identity provider.
+  - The display name, email address and profile picture will be set by OIDC attributes. This will be available for non-OIDC users in the future.
+
 - Remove versions older than 1.56 [#2149](https://github.com/juanfont/headscale/pull/2149)
   - Clean up old code required by old versions
 

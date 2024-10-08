@@ -27,6 +27,17 @@ oidc:
   # as third option, it's also possible to load the oidc secret from environment variables
   # set HEADSCALE_OIDC_CLIENT_SECRET to the required value
 
+  # When true, attempt to automatically user accounts from Headscale 0.23.0 and earlier.
+  # ENABLING THIS OPTION CAN BE A SECURITY RISK.
+  # See "Migrating from Headscale 0.23.0 and earlier" in the manual below.
+  migrate_legacy_users: false
+
+  # When true, allows sign-in with OIDC with an unverified (according to the
+  # provider) email address claim. Some providers use this to signal an
+  # unverified self-service email address change, so ENABLING THIS OPTION CAN BE
+  # A SECURITY ISSUE.
+  allow_unverified_email: false
+
   # Customize the scopes used in the OIDC flow, defaults to "openid", "profile" and "email" and add custom query
   # parameters to the Authorize Endpoint request. Scopes default to "openid", "profile" and "email".
   scope: ["openid", "profile", "email", "custom"]
@@ -44,13 +55,80 @@ oidc:
   # Optional.
   allowed_users:
     - alice@example.com
-
-  # If `strip_email_domain` is set to `true`, the domain part of the username email address will be removed.
-  # This will transform `first-name.last-name@example.com` to the user `first-name.last-name`
-  # If `strip_email_domain` is set to `false` the domain part will NOT be removed resulting to the following
-  # user: `first-name.last-name.example.com`
-  strip_email_domain: true
 ```
+
+## Migrating from Headscale 0.23.0 and earlier
+
+**NOT YET IMPLEMENTED:** See https://github.com/juanfont/headscale/pull/2170 for
+discussion.
+
+Headscale 0.23.0 and earlier have several flaws in their OIDC implementation,
+which could allow an attacker to compromise accounts in a Headscale instance.
+
+### Background and issues
+
+An OIDC identity provider gives a number of attributes (claims) to an
+application (like Headscale) about the person (or other identity) trying to log
+in.
+
+Headscale 0.23.0 and earlier mapped OIDC users to local users based the contents
+of the `email` claim (attribute) with the domain part of the address stripped by
+default (the `oidc.strip_email_domain` option).
+
+This made for short usernames, but was contrary to
+[OIDC recommendations][oidc-sub], which say that only the `sub` (unique subject
+identifier) and `iss` (issuer) together can be relied on as a stable unique user
+identifier.
+
+This has a number of issues, which **could lead to account compromise**:
+
+- An OIDC provider may allow unverified, user-initiated email address changes,
+  and may not enforce a uniqueness constraint on email addresses.
+
+  This could allow a malicious user to take over others' Headscale accounts by
+  setting their own account's `email` to that of another user.
+
+- By default, Headscale would treat two users with the same "user" part of their
+  email address but different domains (eg: `user@example.com` and
+  `user@example.net`) *as the same user*.
+
+  This could be mitigated if an administrator set `oidc.allowed_domains` to
+  exactly **one** domain, or by setting `oidc.strip_email_domain: false`.
+
+- If an OIDC account changed email address, Headscale would create a new
+  account, even if it had the same `sub` (unique identifier).
+
+- Even if an identity provider knew an address to be unverified and told
+  Headscale about it (with `email_verified = false`), Headscale didn't read this
+  field.
+
+Headscale 0.xx.x fixes this, and significantly changes how it uses OIDC:
+
+- Headscale now correctly uses the `sub` attribute to uniquely identify users.
+
+  This is a stable identifier which should track user renames and email address
+  changes in the OIDC provider.
+
+- Headscale will *always* use the `preferred_username` attribute to set the
+  account's username, and the `oidc.strip_email_domain` option has been removed.
+
+  This might be a short name (eg: `user`), an email address, an [SPN][], a
+  [UPN][] or a phone number. This is configurable in some identity providers – 
+  see their docs for help.
+
+- Setting `oidc.map_legacy_users: true` setting (defaults to `false`) allows you
+  to attempt to automatically map users based on the `Email` in their profile.
+
+  **FIXME, BROKEN:** #2020 added this field, so we can't actually do this 😭
+
+### Migration steps
+
+TODO
+
+[oidc-sub]: https://openid.net/specs/openid-connect-basic-1_0.html#ClaimStability
+[SPN]: https://learn.microsoft.com/en-us/windows/win32/ad/service-principal-names
+[UPN]: https://learn.microsoft.com/en-us/windows/win32/ad/naming-properties#userprincipalname
+
 
 ## Azure AD example
 
