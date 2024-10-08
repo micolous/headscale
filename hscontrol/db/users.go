@@ -177,11 +177,13 @@ func (hsdb *HSDatabase) GetUserByEmail(email string) (*types.User, error) {
 
 func GetUserByEmail(tx *gorm.DB, email string) (*types.User, error) {
 	user := types.User{}
-	if result := tx.First(&user, "email = ?", email); errors.Is(
-		result.Error,
-		gorm.ErrRecordNotFound,
-	) {
+	result := tx.First(&user, "email = ?", email)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, ErrUserNotFound
+	}
+	if result.Error != nil {
+		return nil, result.Error
 	}
 
 	return &user, nil
