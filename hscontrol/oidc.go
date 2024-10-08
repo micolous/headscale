@@ -446,10 +446,12 @@ func (a *AuthProviderOIDC) createOrUpdateUserFromClaim(
 	}
 
 	// This check is for legacy, if the user cannot be found by the OIDC identifier
-	// look it up by username. This should only be needed once.
+	// look it up by email. This should only be needed once.
 	// This branch will presist for a number of versions after the OIDC migration and
 	// then be removed following a deprecation.
 	if a.cfg.MapLegacyUsers && user == nil {
+		// FIXME: looking up by email won't work, but also looking up by preferred_username
+		// won't work unless it matches the "user" part of the email address.
 		user, err = a.db.GetUserByEmail(claims.Email)
 		if err != nil && !errors.Is(err, db.ErrUserNotFound) {
 			return nil, fmt.Errorf("creating or updating user: %w", err)
