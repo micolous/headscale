@@ -135,18 +135,18 @@ func (s *Suite) TestUserEmailAddress(c *check.C) {
 	c.Assert(len(users), check.Equals, 1)
 
 	// Lookup should initially fail
-	_, err := db.GetUserByEmail("test@example.com")
+	_, err = db.GetUserByEmail("test@example.com")
 	c.Assert(err, check.NotNil)
 
 	// Set the email address
 	user.Email = "test@example.com"
-	err := db.Save(user).Error
+	err = db.DB.Save(user).Error
 	c.Assert(err, check.IsNil)
 
 	// Now look up
 	u2, err := db.GetUserByEmail("test@example.com")
 	c.Assert(err, check.IsNil)
-	c.Assert(user.Name, u2.Name)
+	c.Assert(u2.Name, check.Equals, "test")
 
 	err = db.DestroyUser("test")
 	c.Assert(err, check.IsNil)
